@@ -13,7 +13,7 @@ menu:
     - name: About
       url: /about/
     - name: GitHub
-      url: https://github.com/rstudio/blogdown
+      url: https://github.com/kenmwaniki/Statistical-Programming.git
     - name: Twitter
       url: https://twitter.com/rstudio
 params:
@@ -39,3 +39,5 @@ markup:
       unsafe: yes
   highlight:
     codeFences: no
+
+    
