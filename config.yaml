@@ -1,6 +1,6 @@
 baseurl: /
 languageCode: en-US
-title: A Hugo website
+title: Ken Mwaniki Portfolio
 theme: hugo-lithium
 ignoreFiles:
   - \.Rmd$
