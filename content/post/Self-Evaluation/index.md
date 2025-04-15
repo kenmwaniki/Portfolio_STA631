@@ -1,8 +1,8 @@
 ---
-date: "2025-04-15T21:49:57-07:00"
-title: Self-Evaluation Letter
+title: "Self-Evaluation Letter"
+date: 2025-04-15
+draft: false
 ---
-
 
 Dear Current Me,
 

@@ -2,9 +2,8 @@
 title: "Participation in Course Community"
 author: "Ken Mwaniki"
 date: 2025-04-15T21:13:14-05:00
-
+draft: false
 ---
-
 
 
 Participation was more than just doing the assignments. I answered questions in the middle of the class when I was confused, I helped classmates on clean modeling syntax, 
