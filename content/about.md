@@ -7,6 +7,8 @@ type: "page"
 draft: false
 ---
 
+![Ken Mwaniki](/img/ScreenshotKen.png)
+
 Welcome to my final portfolio for STA 631.
 
 This portfolio showcases my learning, growth, and application of statistical modeling techniques throughout the semester. It includes reflections on core course objectives, hands-on modeling work using R and the `tidymodels` framework, and a self-evaluation of my progress and challenges.
