@@ -2,7 +2,7 @@
 title: "Participation in Course Community"
 author: "Ken Mwaniki "
 date: 2025-04-15T21:13:14-05:00
-draft: false
+
 ---
 
 
