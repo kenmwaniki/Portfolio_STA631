@@ -7,7 +7,7 @@ type: "page"
 draft: false
 ---
 
-![Ken Mwaniki](/img/ken.png)
+![Ken Mwaniki](/themes/hugo-lithium/static/images/ken.png)
 
 Welcome to my final portfolio for STA 631.
 
