@@ -4,7 +4,7 @@ title: Reflection on Learning and Participation
 ---
 
 
-## Course Learning Objective 1: Describe probability as a foundation of statistical modelling including inference and maximum likelihood estimation
+# Course Learning Objective 1: Describe probability as a foundation of statistical modelling including inference and maximum likelihood estimation
 
 In several assignments — namely Homework 1 (Simple Linear Regression), Homework 2 (Multiple Linear Regression), Homework 4 (Multinomial Logistic Regression), and the GLM Cross-Validation Project — I showcased how these fundamental ideas of probability are applied to compile, validate and understand statistics models. My theoretical knowledge in relation to concepts, such as confidence intervals, p-values, and maximum likelihood estimation (MLE), is furthermore observed in my reflection one.
 
@@ -14,7 +14,7 @@ Homework 4 applied a multinomial logistic regression model, which is estimated w
 
 Additionally, I used cross-validation to estimate how well models generalize to new data on my GLM Project and homework 5. Here, i used probabilistic thinking to help me read residuals, variance and metrics like RMSE. i’ve used fold-wise sampling to build empirical distributions of model performance which reflects my increasing comfort with using probability to verbose uncertainty and variability in predictions.
 
-## Course Learning Objective 2: Apply the appropriate generalized linear model (GLM) for a specific data context
+# Course Learning Objective 2: Apply the appropriate generalized linear model (GLM) for a specific data context
 
 This learning goal is strongly demonstrated in my Homework 3 (Categorical Predictors), Homework 4 (Multinomial Logistic Regression), and my GLM Cross-Validation Project. Both of these assignments asked you to evaluate the structure of my data and then apply an appropriate generalized linear model (GLM), particularly when you could not rely on a categorical response or some form of nonnormal error structure. my selection of models, rationalization of variable roles, and the structure of the modeling workflow and validation process using tidymodels showcase my strength in this area.
 
@@ -22,7 +22,7 @@ However, in Homework 3, I started to look at categorical predictors and their 
 
 In the GLM Cross-Validation Project, I implemented logistic regression to predict self-reported academic performance (high grades vs. low grades) based on a set of behavioral and demographic predictors. This was yet another beautiful case of model choice based on data type: My outcome was binary, thus the appropriate GLM was logistic regression. Most importantly, I performed resampling (v-fold cross-validation) and validated my model and justified my model selection not only based on type of outcome but also type of predictive performance. It invoked steps for encoding of factors, scaling of numeric predictors, and tuning of the model itself, a reasonable (if not dependent) understanding of the role of preprocessing in a GLM setting. Overall, these assignments demonstrate that I can identify a problem, decide if a GLM is appropriate, and apply it with the correct data preprocessing and validation.
 
-3.  Demonstrate model selection given a set of candidate models
+## Course Learning Objective 3: Demonstrate model selection given a set of candidate models
 
 This learning objective was demonstrated in Homework 5, Homework 6, and my GLM Cross-Validation Project, which allowed for many predictors but required judgement on which to include in the final model. Every assignment forced me to weigh models against each other and make careful decisions informed both by statistical performance and theoretical reasoning.
 
@@ -32,7 +32,7 @@ In Homework 6, I experimented with polynomial regression by tuning the degree of
 
 When I predict student academic performance in my GLM Cross-Validation Project, I used model selection techniques again. The final model was identified by comparing various sets of predictors through v-fold cross-validation and choosing the model with the optimal trade-off between accuracy and interpretability. I also made more contextual decisions — for instance, deciding to include sleep patterns and other behavioral variables that would logically correlate with academic performance. These experiences taught me to view model selection as both an art and science that relied on data and domain experience to make informed decisions.
 
-4.  Express the results of statistical models to a general audience
+## Course Learning Objective 4.  Express the results of statistical models to a general audience
 
 This semester, I worked hard on my ability to explain models with simple, understandable language. I practiced this with Homework 3, when I interpreted categorical predictors, and in Project 1, when I summarized logistic regression model output predicting whether students passed. Each of the two positions also provided opportunities to write insights for a non-technical audience and navigate how best to convey complex results.
 
@@ -40,7 +40,7 @@ In Homework 3, I predicted a binary outcome using categorical variables and had 
 
 I built a logistic regression model to do this in Project 1, and then I reported my findings with visualizations and plain language summaries. I used ggplot2 to generate bar plots and predictions charts and described model accuracy and confusion matrix results about how well the model can classify students. With the broom package I also extracted tidy summaries of my model, this was a much more manageable piece of information to weed through to find coefficients that were significant. Rather than attending to every detail, I selected the most relevant results and explained them in a way that a nonstatistician — a school administrator or policymaker — might understand. The experience taught me that good communication is as important as good modeling, especially when dealing with real-world data and data that affect people’s decisions.
 
-5.  Use programming software to fit and assess statistical models
+## Course Learning Objective 5.  Use programming software to fit and assess statistical models
 
 During the semester, I have used R and tidymodels to fit, tweet and inform statistical models every week. This clearly appeared in Homework 2, Homework 6, and the GLM Project.
 
