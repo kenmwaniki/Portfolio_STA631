@@ -13,7 +13,7 @@ menu:
     - name: About
       url: /about/
     - name: GitHub
-      url: https://github.com/kenmwaniki/Statistical-Programming.git/PortFolio_CodePDF.pdf
+      url: https://github.com/kenmwaniki/Statistical-Programming.git
     - name: Twitter
       url: https://twitter.com/rstudio
 params:
