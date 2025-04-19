@@ -1,0 +1,859 @@
+---
+title: "Portfolio Code"
+author: "Ken Mwaniki Muchira"
+date: "2025-01-27"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+library(ISLR2)
+library(ggplot2) 
+```
+
+## Part 1: Multiple Linear Regression with categorical and numeric predictors.
+
+```{r}
+data(diamonds)  # This step is optional; `diamonds` is already loaded with ggplot2
+head(diamonds) 
+```
+```{r}
+str(diamonds)
+summary(diamonds)
+```
+```{r}
+categorical <- sapply(diamonds, function(col) !is.numeric(col))
+names(diamonds)[categorical]
+```
+
+### Changing Ordinal Categorical varables to Factors
+```{r}
+# Convert ordinal variables to factors
+diamonds$cut <- factor(diamonds$cut, 
+                       levels = c("Fair", "Good", "Very Good", "Premium", "Ideal"), 
+                       ordered = TRUE)
+
+diamonds$color <- factor(diamonds$color, 
+                         levels = c("J", "I", "H", "G", "F", "E", "D"), 
+                         ordered = TRUE)
+
+diamonds$clarity <- factor(diamonds$clarity, 
+                           levels = c("I1", "SI2", "SI1", "VS2", "VS1", "VVS2", "VVS1", "IF"), 
+                           ordered = TRUE)
+
+```
+
+## The Categorical variables are cut,color and clarity.
+```{r,message=FALSE}
+library(GGally)
+library(dplyr)
+diamonds %>%
+  dplyr::select(carat,depth, table, price,x,y,z) %>%
+  ggpairs()
+```
+
+
+
+```{r}
+library(ggplot2)
+# Scatter plot: carat vs price
+ggplot(diamonds, aes(x = price, y = carat, color = color)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carat vs Price", x = "Price", y = "Carat") +
+  theme_minimal()
+
+# Scatter plot: carat vs x
+ggplot(diamonds, aes(x = x, y = carat, color = color)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carat vs X (Length)", x = "X (Length)", y = "Carat") +
+  theme_minimal()
+
+# Scatter plot: carat vs y
+ggplot(diamonds, aes(x = y, y = carat, color = color)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carat vs Y (Width)", x = "Y (Width)", y = "Carat") +
+  theme_minimal()
+
+# Scatter plot: carat vs z
+ggplot(diamonds, aes(x = z, y = carat, color = color)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carat vs Z", x = "Z", y = "Carat") +
+  theme_minimal()
+
+# Scatter plot: carat vs depth
+ggplot(diamonds, aes(x = depth, y = carat, color = color)) +
+  geom_point(alpha = 0.7) +
+  labs(title = "Carat vs Z (Depth)", x = "Depth", y = "Carat") +
+  theme_minimal()
+# Box plot for Carat vs Color
+ggplot(diamonds, aes(x = color, y = carat, fill = color)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Carat vs Color", x = "Color", y = "Carat") +
+  theme_minimal()
+
+ggplot(diamonds, aes(x = clarity, y = carat, fill = color)) +
+  geom_boxplot(alpha = 0.7) +
+  labs(title = "Carat vs Clarity", x = "Clarity", y = "Carat") +
+  theme_minimal()
+```
+
+## To determine the best Quantitative variable to use, multicollinearity  has to be put into consideration.
+## It is also important to use a variable that is most Correlated with Carat.
+
+
+```{r}
+library(car)
+model <- lm(carat ~ depth + table + price + x + y + z, data = diamonds)
+vif(model)
+```
+### Price has a low VIF and is higly correlated with Carat, so it will be used as the numeric variable.
+## To determine the categorical model iam going to use, i will do an Anova test.
+```{r}
+# Add cut, color, clarity one at a time
+model_base <- lm(carat ~ 1, data = diamonds)  # Base model (intercept only)
+model_cut <- lm(carat ~ cut, data = diamonds)
+model_color <- lm(carat ~ color, data = diamonds)
+model_clarity <- lm(carat ~ clarity, data = diamonds)
+
+anova(model_base, model_cut, model_color, model_clarity)
+```
+### Model1 which is the null model has an RSS of 12119 
+### Model2 reduces RSS from 12119 (Model 1) to 11690.The reduction in RSS 429.74 is significant, with an F-statistic of 554.09 and a p-value < 2.2e-16.This indicates that cut significantly contributes to predicting carat.
+### Model3  reduces the  RSS by  704.01 is highly significant, with an F-statistic of 1815.47 and a p-value < 2.2e-16.color is a stronger predictor than cut.
+### Model4 reduces the  RSS by 528.60 is also highly significant, with an F-statistic of 2726.26 and a p-value < 2.2e-16.
+### clarity is the strongest predictor of carat as it has the highest F Statistic among the three categorical variables and will be used for prediction.
+```{r}
+levels(diamonds$clarity)
+summary(diamonds$clarity)
+```
+## The most common is SI1,while I1 is the least included.
+```{r}
+
+# Create the high_clarity variable
+diamonds <- diamonds %>%
+  mutate(high_clarity = ifelse(clarity %in% c("VVS1", "VVS2", "IF"), "Yes", "No"))
+
+diamonds
+```
+## Fitting the Multiple regression.
+```{r,message=FALSE}
+library(caret)
+library(parsnip)
+library(broom)
+set.seed(195)  # For reproducibility
+
+train_index <- createDataPartition(diamonds$carat, p = 0.8, list = FALSE)
+train_data <- diamonds[train_index, ]
+test_data <- diamonds[-train_index, ]
+
+lm_spec <- linear_reg() %>%
+  set_mode("regression") %>%
+  set_engine("lm")
+d_weight <- lm_spec %>%
+  fit(carat ~ price*high_clarity, data = train_data)
+tidy(d_weight)
+```
+### Intercept Estimate is 0.3915.This is the predicted value of the response variable when all predictors (price and high_clarityYes) are at 0. P-value: 0.0000000 meaning The intercept is statistically significant 
+### price is Estimated: 0.0.0001119276.For every unit increase in price, the response variable (carat) increases by approximately 0.000109, assuming high_clarityYes remains constant.price is a highly significant predictor of the response variable
+### Diamonds with high clarity have a response value (carat) that is approximately 0.0945481421	lower compared to diamonds with high_clarity = "No", holding price constant.This predictor is extremely significant since it has a very low p_value.
+### This interaction term suggests that the effect of price on the response variable changes when high_clarity is Yes. For each unit increase in price, the response decreases by  0.0000263839	 when high_clarity = Yes.
+
+## Model FIT
+```{r}
+# Summary of the linear model
+summary(d_weight$fit)
+```
+### The model has an R2 of 87.9% meaning it is able to explain 85% of the variance in Carat.
+```{r}
+# Residual diagnostics
+plot(d_weight$fit)
+
+```
+### REsidual Vs laverage:The residuals appear randomly scattered around 0. This suggests the model has captured most patterns in the data.Points to the far right of the x-axis have high leverage, meaning they are far from the average of the predictors.
+### QQ Plot : linearity assumption has been mostly met.
+### Residual Vs Fitted: The normality assumption is met.
+```{r}
+test_data$predicted_carat <- predict(d_weight, new_data = test_data)$.pred
+# Calculate RMSE and MAE
+rmse <- sqrt(mean((test_data$carat - test_data$predicted_carat)^2))
+mae <- mean(abs(test_data$carat - test_data$predicted_carat))
+cat("RMSE:", rmse, "\n")
+cat("MAE:", mae, "\n")
+```
+### RMSE: On average, the predicted carat deviates from the actual value by approximately 0.167 carats. A lower RMSE indicates better model fit.
+### MAE: On average, the model’s predictions are off by about 0.121 carats.
+### RMSE is slightly higher than MAE because RMSE penalizes larger errors more heavily due to squaring residuals.The relatively close values suggest the model is not being significantly affected by large outliers in the data, which is good.
+
+
+## Part 2 : multinomial regression, LDA and Lasso Regression for variable selection.
+
+## Importing the 2016 datasetset 
+
+## Section 1
+
+```{r}
+library(MASS)
+library(ISLR2)
+library(ggplot2)
+library(readxl)
+library(dplyr)
+library(tidymodels)
+
+# Read the Excel file
+pfi_curated_2016 <- read_excel("pfi-data.xlsx", sheet = "curated 2016")
+
+# Reorder columns alphabetically
+pfi_curated_2016 <- pfi_curated_2016 %>%
+  dplyr::select(sort(names(.)))  # Corrected syntax
+
+# View result
+#pfi_curated_2016
+```
+
+## Importing the 2019 datasetset 
+
+## The dataset is also cleaned to remove all negative values since they represented unanswered questions in the questionaire.
+
+```{r}
+pfi_curated_2019 <- read_excel("pfi-data.xlsx", sheet = "curated 2019")
+
+pfi_curated_2019 <- pfi_curated_2019 %>%
+  filter(if_all(everything(), ~ . >= 0))
+#head(pfi_curated_2019)
+```
+
+## Converting all ordinal variables into factors
+
+```{r}
+pfi_curated_2019 <- pfi_curated_2019 %>%
+  mutate(across(where(is.numeric), as.factor))  # Remove the parentheses after is.numeric
+
+categorical_vars <- names(pfi_curated_2016)[sapply(pfi_curated_2019, is.factor)]
+
+print(categorical_vars)
+
+head(pfi_curated_2019)
+```
+
+
+```{r}
+#pfi_curated <- bind_rows(pfi_curated_2016 %>% mutate(Year = 2016),
+                      # pfi_curated_2019 %>% mutate(Year = 2019))
+# Check structure
+```
+
+## After going through the dataset, the following variables were indentified to be the most useful to predict the response variable,SEGRADES
+
+```{r}
+pfi_curated_2019 <- pfi_curated_2019 %>%
+  dplyr::select(SEFUTUREX, SEGRADEQ, SEGRADES, EDCPUB, FHWKHRS, DSBLTY, FSCOUNSLR, NUMSIBSX, TTLHHINC, FOSPORT,SEENJOY,SEABSNT, PARGRADEX, SCHLHRSWK, FCSCHOOL, FHHOME,
+         CSEX, EINTNET, HDHEALTH, FSMTNG,SCCHOICE,SPUBCHOIX,FSATCNFN,FSVOL,FSPTMTNG,FSFREQ,FHHELP,FHCHECKX)
+
+pfi_curated_2019 <- pfi_curated_2019 %>%
+  mutate(across(c(SEFUTUREX, SEGRADEQ, SEGRADES, EDCPUB, FHWKHRS, DSBLTY, FSCOUNSLR, NUMSIBSX, TTLHHINC, FOSPORT,SEENJOY,SEABSNT, PARGRADEX, SCHLHRSWK, FCSCHOOL, FHHOME,
+         CSEX, EINTNET, HDHEALTH, FSMTNG,SCCHOICE,SPUBCHOIX,FSATCNFN,FSVOL,FSPTMTNG,FSFREQ,FHHELP,FHCHECKX), as.factor))
+```
+
+## Splitting the dataset into trainingset and testset.
+
+## A random seed is choosen for consistency in the split.
+
+```{r}
+ggplot(pfi_curated_2019, aes(x = factor(SEGRADES))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Distribution of Self-Reported Grades (SEGRADES)", x = "Grade", y = "Count")
+
+```
+
+
+
+```{r}
+ggplot(pfi_curated_2019, aes(x = FHHELP, fill = factor(SEGRADES))) +
+  geom_bar(position = "fill") +
+  labs(title = "Homework Help vs SEGRADES", x = "Homework Help Level", y = "Proportion")
+
+```
+
+```{r}
+ggplot(pfi_curated_2019, aes(x = SEABSNT, fill = factor(SEGRADES))) +
+  geom_bar(position = "fill") +
+  labs(title = "Absenteeism by Grade Outcome", x = "Absence Level", y = "Proportion")
+
+```
+```{r}
+pfi_curated_2019 %>%
+  count(SEABSNT, SEGRADES) %>%
+  ggplot(aes(x = SEABSNT, y = n, fill = SEGRADES)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Absenteeism Levels vs SEGRADES",
+       x = "Absenteeism Level", y = "Student Count") +
+  scale_fill_brewer(palette = "Set1")
+
+```
+
+
+```{r}
+# Assuming both SEGRADEQ and SEGRADES are in your test set
+pfi_curated_2019 %>%
+  count(SEGRADEQ, SEGRADES) %>%
+  ggplot(aes(x = SEGRADEQ, y = n, fill = SEGRADES)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Self-Perception vs Actual Grades",
+       x = "Self-Perceived Grade (SEGRADEQ)", y = "Count") +
+  scale_fill_brewer(palette = "Set2")
+
+```
+
+## Section 2
+
+```{r}
+library(tidymodels)
+library(nnet)  # package for multinomial regression
+library(themis)  # For handling class imbalance
+set.seed(123)  # Ensure reproducibility
+
+# Split the data (80% train, 20% test)
+data_split <- initial_split(pfi_curated_2019, prop = 0.8, strata = SEGRADES)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+```
+
+# Dimensions od the trainset
+
+```{r}
+dim(train_data)
+```
+
+# Dimensions od the testset
+
+```{r}
+dim(test_data);
+```
+
+
+```{r,message=FALSE}
+library(nnet)
+library(MASS)
+library(tidyverse)
+
+# Ensure outcome is a factor
+pfi_curated_2019$SEGRADES <- as.factor(pfi_curated_2019$SEGRADES)
+
+# Fit full model
+full_model <- multinom(SEGRADES ~ ., data = pfi_curated_2019, trace = FALSE)
+
+# Stepwise model selection (quietly)
+step_model <- suppressWarnings(
+  stepAIC(full_model, direction = "backward", trace = FALSE)
+)
+
+# Print final AIC
+cat("Final AIC:", AIC(step_model), "\n\n")
+
+# Get predictors from the final model formula
+best_predictors <- attr(terms(step_model), "term.labels")
+
+cat("Selected predictors:\n")
+print(best_predictors)
+```
+
+
+```{r}
+table(train_data$SEGRADES)
+
+```
+
+## Setting up cross_validation for so as to retrain the model with the selected 9 preditors.
+
+## Since the classes within SEGRADES have diffrent values , a weight metric is used in the training of the model.
+
+```{r}
+# Create cross-validation folds (5-fold cross-validation)
+cv_folds <- vfold_cv(train_data, v = 5, strata = SEGRADES)
+
+# Define multinomial logistic regression model with class weights
+class_weights <- table(train_data$SEGRADES)
+class_weights
+class_weights <- max(class_weights) / class_weights  # Normalize
+class_weights
+```
+
+
+```{r}
+multinom_model <- multinom_reg(mode = "classification", penalty = 0.1) %>%
+  set_engine("nnet", MaxNWts = 10000, class.weights = class_weights)
+```
+
+## Training the reduced model
+
+```{r}
+# Define the preprocessing recipe
+#multinom_recipe <- recipe(SEGRADES ~SEFUTUREX+SEGRADEQ+FHWKHRS+TTLHHINC+SEENJOY+SEABSNT+EINTNET+FHHELP , data = train_data) %>%
+multinom_recipe <- recipe(SEGRADES ~SEFUTUREX+SEGRADEQ+FSCOUNSLR+SEABSNT+FHHOME+CSEX+EINTNET+SCCHOICE+FSATCNFN+FSVOL+FHHELP+FHCHECKX , data = train_data) %>%
+  step_normalize(all_numeric_predictors()) %>% 
+  update_role(SEGRADES, new_role = "outcome") %>% 
+  step_dummy(all_nominal_predictors(), -all_outcomes())  # Convert categorical variables to dummy variables
+
+# Create workflow
+multinom_workflow <- workflow() %>%
+  add_model(multinom_model) %>%
+  add_recipe(multinom_recipe)
+```
+
+## Fitting the model and taking the average accuracy of the folds.
+
+
+```{r}
+library(yardstick)
+library(tidymodels)  # Ensures all tidymodels components are loaded
+
+# Make sure SEGRADES is factor before defining cv_folds
+train_data <- train_data %>%
+  mutate(SEGRADES = as.factor(SEGRADES))
+
+# Define cross-validation with strata explicitly
+set.seed(123)  # reproducibility
+cv_folds <- vfold_cv(train_data, v = 5, strata = SEGRADES)
+
+# Fit resamples and calculate accuracy and kappa
+cv_results <- multinom_workflow %>%
+  fit_resamples(
+    resamples = cv_folds,
+    metrics = metric_set(yardstick::accuracy, yardstick::kap,yardstick::roc_auc)
+  )
+
+# View cross-validation results
+cv_results %>%
+  collect_metrics()
+
+```
+
+## The  model correctly predicted the grade category about 64.5% of the time.
+
+## The average ability of your model to separate classes is 82.6%, which is good.
+
+## The model is performing much better than chance in its classification since its  KAP is approximately 40.3%, clearly indicating a moderate level of agreement between predicted grades and actual grades.
+
+## These results suggest the model performs well at classifying student academic outcomes based on parent involvement and school-related factors.
+
+```{r,message=FALSE}
+# Train the final model on full training data
+final_model <- multinom_workflow %>%
+  fit(data = train_data)
+```
+
+
+```{r}
+# Extract the underlying model from the fitted workflow
+final_fit_model <- extract_fit_engine(final_model)
+# View the coefficients
+#coef(final_fit_model)
+```
+
+## Coefficients of the predictors variables.
+
+```{r}
+library(tibble)
+
+as_tibble(coef(final_fit_model), rownames = "GradeCategory")
+```
+```{r}
+#final_fit_model$coefnames  # shows variable names
+#final_fit_model$AIC        # model AIC
+
+```
+
+## Section 3
+
+## Preparing the testdataset for prediction.
+
+```{r}
+test_data <- test_data %>%
+  filter(SEGRADES != -1) %>%
+  mutate(SEGRADES = factor(SEGRADES, levels = c(1, 2, 3,4,5)))
+
+```
+
+
+
+```{r}
+# Make predictions on test data
+test_predictions <- final_model %>%
+  predict(new_data = test_data, type = "class")
+
+
+# Evaluate accuracy on test data
+test_results <- test_data %>%
+  bind_cols(test_predictions)
+
+test_metrics <- test_results %>%
+  metrics(truth = SEGRADES, estimate = .pred_class)
+
+# Print final accuracy
+test_metrics
+
+```
+
+## The model correctly predicted the grade category 65.7% of the time on the test set. That's slightly better than cross-validation accuracy (67.9%).
+
+## Cohen’s Kappa measures how much better your model is than random guessing, adjusted for chance. A Kappa of 47% shows moderate agreement.
+
+```{r}
+test_results <- test_data %>%
+  bind_cols(test_predictions)
+test_results
+```
+
+## A confusion matrix of prediction and groundtruth
+
+```{r}
+# Create confusion matrix
+conf_mat(test_results, truth = SEGRADES, estimate = .pred_class)
+```
+
+## A heatmap of the confusion Matrix
+
+```{r}
+test_results %>%
+  conf_mat(truth = SEGRADES, estimate = .pred_class) %>%
+  autoplot(type = "heatmap") +  # Ensure heatmap type
+  scale_fill_gradient(low = "grey", high = "blue") +  # Adjust color scale
+  ggtitle("Confusion Matrix Heatmap") +  # Add a title
+  theme_minimal()  # Apply a minimal theme
+
+```
+## Section 4
+
+## Discriminant Analysis
+
+```{r,message=FALSE}
+library(dplyr)
+library(GGally)
+library(MVN)
+library(rstatix)
+library(MASS)
+library(ISLR2)
+library(ggplot2)
+library(readxl)
+library(tidymodels)
+# Read the Excel file
+pfi_curated_20192 <- read_excel("pfi-data.xlsx", sheet = "curated 2019")
+
+# Reorder columns alphabetically
+pfi_curated_20192 <- pfi_curated_20192 %>%
+  dplyr::select(sort(names(.)))  # Corrected syntax
+pfi_curated_20192 <- pfi_curated_20192 %>%
+  filter(if_all(everything(), ~ . >= 0))
+```
+
+```{r}
+pfi_curated_20192 <- pfi_curated_20192 %>%
+  dplyr::select("SEFUTUREX","SEGRADEQ","FSCOUNSLR","SEABSNT","FHHOME","CSEX","EINTNET","SCCHOICE","FSATCNFN","FSVOL","FHHELP","FHCHECKX","SEGRADES" )
+pfi_curated_20192 <- pfi_curated_20192 %>%
+  mutate(across(c(SEFUTUREX,SEGRADEQ,FSCOUNSLR,SEABSNT,FHHOME,CSEX,EINTNET,SCCHOICE,FSATCNFN,FSVOL,FHHELP,FHCHECKX,SEGRADES), as.factor))
+
+```
+
+```{r}
+head(pfi_curated_20192)
+```
+
+```{r}
+library(tidymodels)
+library(nnet)  # Neural network package for multinomial regression
+library(themis)  # For handling class imbalance
+set.seed(123)  # Ensure reproducibility
+
+# Split the data (80% train, 20% test)
+data_split <- initial_split(pfi_curated_20192, prop = 0.8, strata = SEGRADES)
+train_data2 <- training(data_split)
+test_data2 <- testing(data_split)
+```
+
+```{r}
+dim(train_data2)
+```
+
+
+```{r}
+dim(test_data2)
+```
+
+
+```{r,message=FALSE}
+# Assuming your data is in 'pfi_curated_2016' and your predictors are:
+predictor_columns <- c("SEFUTUREX","SEGRADEQ","FSCOUNSLR","SEABSNT","FHHOME","CSEX","EINTNET","SCCHOICE","FSATCNFN","FSVOL","FHHELP","FHCHECKX")
+outcome_variable <- "SEGRADES"
+```
+
+
+
+```{r,message=FALSE}
+library(tidymodels)
+library(discrim)  # For LDA model
+library(yardstick)  # For evaluation
+# Define an LDA model
+lda_model <- discrim_linear(mode = "classification") %>%
+  set_engine("MASS")  # Uses LDA from MASS package
+```
+
+
+
+```{r}
+colnames(train_data2)
+```
+
+## Defining preprocessing in the recipe
+
+```{r}
+
+lda_recipe <- recipe(SEGRADES ~ SEFUTUREX+SEGRADEQ+FSCOUNSLR+SEABSNT+FHHOME+CSEX+EINTNET+SCCHOICE+FSATCNFN+FSVOL+FHHELP+FHCHECKX+SEGRADES, data = train_data2) %>%
+  step_zv(all_numeric_predictors()) %>%
+  step_corr(all_numeric_predictors(), threshold = 0.8) %>%
+  step_normalize(all_numeric_predictors()) %>%
+  step_dummy(all_nominal_predictors(), -all_outcomes())
+```
+
+# Creating a workflow that combines the model and recipe
+
+```{r}
+lda_workflow <- workflow() %>%
+  add_model(lda_model) %>%
+  add_recipe(lda_recipe)
+```
+
+```{r}
+# Fit the model on training data
+lda_fit <- lda_workflow %>%
+  fit(data = train_data2)
+
+# Print model details
+lda_fit
+
+```
+```{r}
+#prep(lda_recipe) %>%
+  #juice() %>%
+  #glimpse()
+
+```
+
+
+## SEGRADEQ5 and SEGRADEQ4 have the highest absolute values, making them most important for classification.
+
+```{r}
+lda_model_fit <- extract_fit_engine(lda_fit)
+lda_model_fit
+```
+
+```{r}
+# Generate class predictions
+lda_predictions <- predict(lda_fit, new_data = test_data2, type = "class")
+
+# Bind predictions with actual test data
+test_results <- test_data2 %>%
+  bind_cols(lda_predictions)
+
+# View predictions
+head(test_results)
+
+```
+
+```{r}
+# Compute accuracy
+accuracy_score_lda <- test_results %>%
+  metrics(truth = SEGRADES, estimate = .pred_class) %>%
+  filter(.metric == "accuracy")
+
+# Print accuracy
+accuracy_score_lda
+
+```
+
+## LDA model correctly predicted the class labels for about 69.4% of the test samples.
+
+
+```{r}
+# Create confusion matrix
+conf_mat(test_results, truth = SEGRADES, estimate = .pred_class)
+
+```
+
+
+```{r}
+test_results %>%
+  conf_mat(truth = SEGRADES, estimate = .pred_class) %>%
+  autoplot(type = "heatmap") +  # Ensure heatmap type
+  scale_fill_gradient(low = "grey", high = "blue") +  # Adjust color scale
+  ggtitle("Confusion Matrix Heatmap") +  # Add a title
+  theme_minimal()  # Apply a minimal theme
+
+```
+
+
+```{r}
+library(tidyverse)
+library(broom)
+
+# Extract and tidy the coefficients
+coef_df <- as_tibble(coef(final_fit_model), rownames = "term")
+
+# Choose SEGRADES = 4 (adjust as needed)
+coef_4 <- coef_df %>% filter(term == "4") %>%
+  pivot_longer(-term, names_to = "predictor", values_to = "coefficient")
+
+# Plot
+ggplot(coef_4, aes(x = reorder(predictor, coefficient), y = coefficient)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(title = "Multinomial Coefficients for SEGRADES = 4",
+       x = "Predictor", y = "Coefficient")
+
+
+```
+
+
+## Applying Lasso Regression to select the variables that are the strongest predictors of SEGRADES from the ones selected earlier.
+
+## A high penalty is applied  for strong variable selection.
+
+```{r,message=FALSE}
+# Load required libraries
+library(tidymodels)
+library(glmnet)
+
+# 1. Data Preprocessing
+# Remove rows with SEGRADES == -1 (assuming -1 is an invalid category)
+train_data <- train_data[train_data$SEGRADES != -1, ]
+
+# Combine category 4 with category 3 if needed
+#train_data$SEGRADES <- as.character(train_data$SEGRADES)
+#train_data$SEGRADES[train_data$SEGRADES == "4"] <- "3"
+train_data$SEGRADES <- as.factor(train_data$SEGRADES)
+
+# Remove any remaining NA values
+train_data <- na.omit(train_data)
+```
+
+## Remove any data where grades (SEGRADES) are marked as invalid (-1).
+## Ensures that your target variable (SEGRADES) is treated as a categorical factor, suitable for classification.
+## Remove any rows with missing values to keep the data clean for modeling.
+
+
+```{r,message=FALSE}
+# 2. Create a Recipe for Data Preprocessing
+recipe_obj <- recipe(SEGRADES ~ ., data = train_data) %>%
+  step_dummy(all_nominal_predictors()) %>% # Convert categorical predictors to dummy variables
+  step_zv(all_predictors()) %>%  
+  step_normalize(all_predictors())
+```
+
+
+## Converte  categorical predictors into a series of binary variables ("dummy variables").
+## Remove any predictor columns that don't provide meaningful information (zero variance).
+## Normalize all predictor variables so they're on the same scale, helping the model learn more efficiently.
+
+```{r,message=FALSE}
+# 3. Define the LASSO Model Specification
+lasso_spec <- multinom_reg(penalty = 10, mixture = 1) %>% # Adjusted penalty to allow more non-zero coefficients
+  set_engine("glmnet")
+
+# 4. Create a Workflow
+lasso_workflow <- workflow() %>%
+  add_recipe(recipe_obj) %>%
+  add_model(lasso_spec)
+
+# 5. Fit the Final Model to the Training Data
+final_lasso_fit <- fit(lasso_workflow, data = train_data)
+
+# 6. Extract Coefficients
+coefficients <- final_lasso_fit %>%
+  extract_fit_engine() %>%
+  coef()
+
+```
+
+
+## Pulls out the numerical coefficients from your final LASSO model.
+
+## These coefficients tell you the influence of each predictor variable on your outcome (grades).
+
+```{r,message=FALSE}
+# 7. Extract the Names of Variables with  Coefficients greater than 0.45
+selected_variables <- lapply(coefficients, function(x) {
+  non_zero_idx <- which(x >3, arr.ind = TRUE)
+  if (length(non_zero_idx) > 0) {
+    rownames(x)[non_zero_idx[, 1]]
+  } else {
+    NULL
+  }
+})
+
+# Flatten the list and remove duplicates
+selected_variables <- unique(unlist(selected_variables))
+
+# 8. Remove the Intercept (if present)
+selected_variables <- selected_variables[selected_variables != "(Intercept)"]
+
+# 9. Print the Selected Variables
+#print(selected_variables)
+
+library(tidymodels)
+
+# Extract preprocessing steps from the trained recipe
+preprocessed_data <- prep(recipe_obj) %>% juice()
+
+# Get the original column names BEFORE one-hot encoding
+original_vars <- colnames(train_data)
+
+# Print them for verification
+print(original_vars)
+
+```
+
+
+
+```{r}
+library(broom)
+
+tidy_coefs <- final_lasso_fit %>%
+  extract_fit_engine() %>%
+  tidy()
+tidy_coefs
+```
+
+## Converts your model's coefficients into a clear, readable table showing each predictor variable's influence.
+
+## This makes interpreting your model's results straightforward.
+
+## The Lasso regression picks out 9 Variables as the strongest predictors of SEGRADES.
+
+
+```{r}
+selected_original_vars <- unique(gsub("_X[0-9]+$", "", selected_variables))
+selected_original_vars <- selected_original_vars[selected_original_vars != ""]
+print(selected_original_vars)
+```
+
+
+## From theLASSO model, the variables selected reflect a rich array of student behaviors, family conditions, and parent interactions that all affect academic success. One item, for example, SEENJOY, which measures students’ enjoyment of school, is a strong predictor of both of these important traits—engagement and motivation—that are closely related to achievement. By the same token, SEGRADEQ, or the student's self-perceived grade, is a measure of academic self-confidence and can affect both effort and results. EINTNET is a measure of access to resources as well, and could signify home internet availability — a critical resource for research, assignments, and learning remotely.
+
+## FHWKHRS, this is the number of hours a student devotes to homework each week; this stands for study habits The better the discipline and diligence in studies, this variable directly correlates with it. The great theme is parental involvement reflected through several varying variables: FSVOL (parent volunteer activity); FSCOUNSLR (parent-school counselor interactions); FSFREQ(frequency of parent-school communication); and FHHELP (parental help with homework). All these are activities that signal how involved parents are in their child’s education, and research shows consistently that children whose parents are invested succeed in school.
+
+## You also have socioeconomic and contextual factors, like SPUBCHOIX, which indicates whether the parents actively chose the student’s public school—often indicative of higher levels of awareness and engagement in educational decision-making. HDHEALTH: The health status of household members can affect a student’s ability to focus or to attend class regularly. Ultimately, economic considerations are encapsulated in the total household income (TTLHHINC), which may capture the availability of learning materials, tutoring, and a stable learning environment. The combined effect of these variables provides a more holistic perspective on the educational influences acting on an individual student, lending further credence to the model’s "in-school" versus "at-home" consideration.
+
+## Both Lasso regression and AIC in the multinormial regression picked Common Variables Selected by Both Models:
+## SEGRADEQ (Self-perceived grades)
+## EINTNET (Internet access at home)
+## FSVOL (Parental volunteer activity)
+## FSCOUNSLR (Parent-school counselor interaction)
+## FHHELP (Parental help with homework)
+
+## The reason why there was a difference in the predictors of the two models is because Stepwise regression adds or removes predictors one at a time based on how much they improve the model's AIC (Akaike Information Criterion).AIC tries to balance model fit with complexity—favoring models that explain the data well without being overly complicated. It’s a greedy algorithm, meaning it may settle for a "good enough" model rather than the absolute best one. while LASSO penalizes the size of coefficients, pushing some of them exactly to zero. It’s focused on simplifying the model by keeping only the most influential variables and discarding the rest. It handles multicollinearity well—if two variables are correlated, LASSO will usually pick only one.It’s particularly good at feature selection, often creating sparser models with fewer but stronger predictors.
